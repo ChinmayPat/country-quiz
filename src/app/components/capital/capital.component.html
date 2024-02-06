@@ -1,0 +1,11 @@
+<p>capital works!</p>
+
+<!-- {{data | json }} -->
+
+<div class="d-flex gap">
+  @if(buttonList.length > 0) { @for (item of buttonList; track item) {
+  <button type="button" (click)="onItemSelect(item, $event)">{{ item }}</button>
+  } } @else {
+    <p>Congrats!</p>
+  }
+</div>
