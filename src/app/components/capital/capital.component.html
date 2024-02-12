@@ -3,9 +3,11 @@
 <!-- {{data | json }} -->
 
 <div class="d-flex gap">
-  @if(buttonList.length > 0) { @for (item of buttonList; track item) {
-  <button type="button" (click)="onItemSelect(item, $event)">{{ item }}</button>
-  } } @else {
-    <p>Congrats!</p>
+  @for (item of quizData(); track item) {
+  <button type="button" (click)="onItemSelect(item)"
+    [class.button-selected]="selectedValues()?.content === item.content"
+    [class.wrong-pair]="wrongPairMap()?.content === item.content || wrongPairMap()?.pairWith === item.content">
+    {{ item.content }}
+  </button>
   }
 </div>

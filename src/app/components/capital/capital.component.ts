@@ -1,76 +1,67 @@
 import { JsonPipe } from '@angular/common';
-import { Component, Input, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Input,
+  OnInit,
+  Signal,
+  WritableSignal,
+  effect,
+  signal,
+} from '@angular/core';
 
+interface QuizRecord {
+  content: string;
+  pairWith: string;
+}
 @Component({
   selector: 'app-capital',
   standalone: true,
   imports: [JsonPipe],
   templateUrl: './capital.component.html',
   styleUrl: './capital.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CapitalComponent implements OnInit {
-  @Input({ required: true }) data: any;
+export class CapitalComponent {
+  protected quizData = signal<QuizRecord[]>([]);
 
-  quizData = new Map<string, string>();
+  @Input({ required: true }) set data(data: { [x: string]: string }) {
+    let tempList: any[] = [];
+    Object.keys(data).forEach((key: string) => {
+      tempList.push({ content: data[key], pairWith: key });
+      tempList.push({ content: key, pairWith: data[key] });
+    });
+    this.quizData.set(tempList);
+  }
 
-  buttonList: Array<string> = [];
+  selectedValues = signal<QuizRecord | null>(null);
+  wrongPairMap = signal<QuizRecord | null>(null);
 
-  selectedValues: Array<any> = [];
+  wrongPair(value: QuizRecord) {
+    this.wrongPairMap.set({
+      content: this.selectedValues()?.content ?? '',
+      pairWith: value.content,
+    });
+  }
 
-  ngOnInit(): void {
-    Object.keys(this.data).forEach((key: string) => {
-      let value: string = this.data[key] ?? '';
-      if (value.length > 0) {
-        this.quizData.set(key, value);
+  onItemSelect(value: QuizRecord) {
+    if (this.selectedValues()) {
+      if (this.selectedValues()?.content === value.pairWith) {
+        this.quizData.update((list) => {
+          return list.filter(
+            (qObj) =>
+              qObj.content !== value.content && qObj.content !== value.pairWith
+          );
+        });
+        this.selectedValues.set(null);
+        this.wrongPairMap.set(null);
+      } else {
+        this.wrongPair(value);
+        this.selectedValues.set(null);
       }
-    });
-    this.initializeButtonList();
-  }
-
-  initializeButtonList() {
-    this.buttonList = [];
-    this.quizData.forEach((value, key) => {
-      this.buttonList.push(key);
-      this.buttonList.push(value);
-    });
-    this.buttonList.sort(() => Math.random() - 0.5);
-  }
-
-  removeItem(key: string) {
-    this.quizData.delete(key);
-    this.initializeButtonList();
-    this.selectedValues = [];
-  }
-
-  wrongPair() {
-    this.selectedValues.forEach((value) => {
-      value.html.target.classList.add('wrong-pair');
-    });
-    this.selectedValues = [];
-  }
-
-  onItemSelect(value: string, event: any) {
-    document.querySelectorAll('button').forEach((value) => {
-      value.classList.remove('wrong-pair', 'button-selected');
-    });
-    if (this.selectedValues.length === 2) {
       return;
-    } else {
-      this.selectedValues.push({ value: value, html: event });
-      event.target.classList.add('button-selected');
-      if (this.selectedValues.length === 2) {
-        if (this.quizData.get(this.selectedValues[0].value)) {
-          this.selectedValues[1].value ===
-            this.quizData.get(this.selectedValues[0].value)
-            ? this.removeItem(this.selectedValues[0].value)
-            : this.wrongPair();
-        } else {
-          this.selectedValues[0].value ===
-            this.quizData.get(this.selectedValues[1].value)
-            ? this.removeItem(this.selectedValues[1].value)
-            : this.wrongPair();
-        }
-      }
     }
+    this.wrongPairMap.set(null);
+    this.selectedValues.set(value);
   }
 }
